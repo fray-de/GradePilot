@@ -1,0 +1,55 @@
+# GradePilot configuration. Copy to config.yaml and edit.
+# API keys are NOT stored here — set them in .env using the variable
+# names referenced below (e.g. LLM_API_KEY).
+
+llm:
+  # Any OpenAI-compatible chat/completions endpoint.
+  base_url: "https://api.openai.com/v1"
+  model: "gpt-4o-mini"
+  api_key_env: "LLM_API_KEY"
+  temperature: 0.0
+  max_tokens: 1024
+  timeout_seconds: 60
+
+ocr:
+  # engine: "vlm" (default — multimodal LLM reads the cropped image)
+  #         "paddle" (local PaddleOCR fallback, requires `pip install gradepilot[paddle]`)
+  engine: "vlm"
+  # When engine == "vlm" we reuse the `llm` block above by default.
+  # Set vlm.override_model to use a different model just for OCR/grading-from-image.
+  vlm:
+    override_model: null
+
+automation:
+  # Safety delay before each simulated click, so the user can hit the hotkey to abort.
+  pre_click_delay_ms: 800
+  # Global hotkey to immediately pause/stop the run.
+  stop_hotkey: "esc"
+  # When true, NEVER actually clicks submit — only logs what would be submitted.
+  dry_run: true
+  # PyAutoGUI failsafe: moving mouse to a screen corner aborts. Keep enabled.
+  pyautogui_failsafe: true
+
+session:
+  # "trial" (always require confirmation) or "batch".
+  mode: "trial"
+  trial_paper_limit: 100
+  # "always" | "threshold" | "never". In trial mode, "always" is enforced regardless.
+  require_confirmation: "always"
+  # Used only when require_confirmation == "threshold".
+  auto_confirm_min_confidence: 0.9
+
+paths:
+  # All paths are resolved relative to the project root unless absolute.
+  data_dir: "data"
+  log_dir: "data/logs"
+  crops_dir: "data/crops"
+  profiles_dir: "profiles"
+  db_filename: "gradepilot.db"
+  log_filename: "gradepilot.log"
+
+logging:
+  console_level: "INFO"
+  file_level: "DEBUG"
+  file_max_bytes: 5242880
+  file_backup_count: 3
