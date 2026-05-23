@@ -27,7 +27,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install -e .
           pip install pyinstaller
 
       - name: Build EXE with PyInstaller
@@ -38,6 +37,8 @@ jobs:
             --name gradepilot `
             --noconfirm `
             --clean `
+            --paths . `
+            --collect-all gradepilot `
             --collect-submodules PyQt6 `
             scripts/gradepilot_entry.py
 
