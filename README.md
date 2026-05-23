@@ -5,9 +5,9 @@ Human-in-the-loop grading assistant for browser-based exam platforms
 proposes a score against a rubric using an LLM, and — after teacher
 confirmation — types the score and clicks submit.
 
-**Status:** M1 — skeleton, config loader, logging, SQLite schema. UI / OCR /
-LLM / automation are stubbed and land in later milestones (see the project
-brief).
+**Status:** M2 — CLI skeleton + config + logging + SQLite + interactive
+profile capture (PyQt6 overlay). OCR / LLM / automation are stubbed and
+land in later milestones (see the project brief).
 
 ## Install (development)
 
@@ -33,16 +33,37 @@ cp .env.example .env
 API keys are read from environment variables only. `config.yaml`
 references them by name (e.g. `llm.api_key_env: LLM_API_KEY`).
 
-## Run (M1 commands only)
+## Run
 
 ```bash
+# M1
 python -m gradepilot --version
 python -m gradepilot --check-config       # prints parsed config; API key masked
 python -m gradepilot --init-db            # creates data/gradepilot.db
+
+# M2 — interactive profile capture
+python -m gradepilot --define-profile <name>   # opens fullscreen overlay
+python -m gradepilot --list-profiles
+python -m gradepilot --show-profile <name>
+
 pytest -q                                 # run the test suite
 ```
 
-`data/`, logs, screenshots, and the SQLite DB are gitignored.
+### Defining a profile (M2)
+
+`--define-profile <name>` walks you through four picks:
+
+1. **Answer region** — drag a rectangle around the student's answer area.
+2. **Score input box** — drag a rectangle around the score input field.
+3. **Submit button** — click the submit button.
+4. **Next question button** — click the next-question button.
+
+Esc cancels at any step. The result lands in `profiles/<name>.json`,
+including the screen resolution at capture time. Re-run with a new name
+for a different exam UI or resolution.
+
+`data/`, logs, screenshots, and the SQLite DB are gitignored. `profiles/`
+is tracked.
 
 ## Pre-built Windows EXE
 

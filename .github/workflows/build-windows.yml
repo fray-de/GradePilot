@@ -39,7 +39,7 @@ jobs:
             --clean `
             --paths . `
             --collect-all gradepilot `
-            --collect-submodules PyQt6 `
+            --collect-all PyQt6 `
             --add-data "config.example.yaml;." `
             scripts/gradepilot_entry.py
 
