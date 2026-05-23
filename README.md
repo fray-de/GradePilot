@@ -44,6 +44,24 @@ pytest -q                                 # run the test suite
 
 `data/`, logs, screenshots, and the SQLite DB are gitignored.
 
+## Pre-built Windows EXE
+
+GitHub Actions builds a one-file `gradepilot.exe` on every push (workflow:
+`.github/workflows/build-windows.yml`). To get a build:
+
+- **Latest commit:** open the Actions tab → pick the most recent run → download
+  the `gradepilot-windows-<sha>` artifact (kept 30 days).
+- **Tagged release:** push a tag like `v0.1.0`; the workflow attaches
+  `gradepilot.exe` to a GitHub Release auto-generated from commit messages.
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The exe is portable; drop it next to a `config.yaml` + `.env` and run it from
+a terminal.
+
 ## Layout
 
 ```
