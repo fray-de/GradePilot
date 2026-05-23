@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -12,6 +13,32 @@ from dotenv import load_dotenv
 
 class ConfigError(ValueError):
     pass
+
+
+def _frozen() -> bool:
+    """True when running inside a PyInstaller bundle."""
+    return getattr(sys, "frozen", False)
+
+
+def app_root() -> Path:
+    """Where to look for config.yaml / .env / data/ at runtime.
+
+    Frozen builds anchor next to the exe (the user's stable install dir).
+    Source runs anchor at the current working directory.
+    """
+    if _frozen():
+        return Path(sys.executable).resolve().parent
+    return Path.cwd().resolve()
+
+
+def _bundled_resource(name: str) -> Path | None:
+    """Path to a file bundled via PyInstaller --add-data, if any."""
+    base = getattr(sys, "_MEIPASS", None)
+    if base:
+        p = Path(base) / name
+        if p.exists():
+            return p
+    return None
 
 
 @dataclass
@@ -134,13 +161,35 @@ def load_config(
     config_path: Path | str | None = None,
     env_path: Path | str | None = None,
 ) -> AppConfig:
-    """Load config.yaml (defaults to ./config.yaml) and merge .env."""
-    project_root = Path.cwd().resolve()
+    """Load config.yaml (defaults to <app_root>/config.yaml) and merge .env.
+
+    When running as a frozen exe and no config.yaml is found next to the exe,
+    drop the bundled config.example.yaml next to the exe and raise a friendly
+    error pointing the user there.
+    """
+    project_root = app_root()
 
     if config_path is None:
         candidate = project_root / "config.yaml"
         if not candidate.exists():
-            candidate = project_root / "config.example.yaml"
+            example = project_root / "config.example.yaml"
+            if _frozen():
+                # First-run UX for the exe: drop the bundled example next to the
+                # exe and tell the user what to do, instead of silently loading
+                # the example (which has no API key).
+                if not example.exists():
+                    bundled = _bundled_resource("config.example.yaml")
+                    if bundled is not None:
+                        example.write_bytes(bundled.read_bytes())
+                raise ConfigError(
+                    f"no config.yaml found next to the exe.\n"
+                    f"  exe dir : {project_root}\n"
+                    f"  example : {example} (wrote it for you)\n"
+                    f"  next    : copy it to config.yaml, edit it,\n"
+                    f"            and create a .env with your API key (e.g. LLM_API_KEY=sk-...)"
+                )
+            # Source run: keep the historical fallback so dev workflow works.
+            candidate = example
         config_path = candidate
     config_path = Path(config_path).resolve()
     if not config_path.exists():

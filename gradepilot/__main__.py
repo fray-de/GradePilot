@@ -28,6 +28,10 @@ def main(argv: list[str] | None = None) -> int:
         print(f"gradepilot {__version__}")
         return 0
 
+    if not (args.check_config or args.init_db):
+        parser.print_help()
+        return 0
+
     try:
         cfg = load_config(args.config)
     except ConfigError as e:
