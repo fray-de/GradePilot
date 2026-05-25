@@ -4,8 +4,25 @@
 
 llm:
   # Any OpenAI-compatible chat/completions endpoint.
-  base_url: "https://api.openai.com/v1"
-  model: "gpt-4o-mini"
+  # Examples (uncomment one set):
+  #
+  #   Qwen-VL via Alibaba DashScope (recommended for Chinese handwriting):
+  #     base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  #     model:    "qwen-vl-max"        # or qwen-vl-ocr / qwen3-vl-plus
+  #
+  #   GLM-4V (Zhipu):
+  #     base_url: "https://open.bigmodel.cn/api/paas/v4"
+  #     model:    "glm-4v-plus"
+  #
+  #   Doubao Vision (ByteDance, via Volcengine ARK):
+  #     base_url: "https://ark.cn-beijing.volces.com/api/v3"
+  #     model:    "doubao-1.5-vision-pro"
+  #
+  #   OpenAI (English/mixed; needs international payment):
+  #     base_url: "https://api.openai.com/v1"
+  #     model:    "gpt-4o-mini"
+  base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  model: "qwen-vl-max"
   api_key_env: "LLM_API_KEY"
   temperature: 0.0
   max_tokens: 1024

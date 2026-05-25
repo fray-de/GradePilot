@@ -2,12 +2,14 @@
 
 M1: --version / --check-config / --init-db
 M2: --define-profile / --list-profiles / --show-profile
+M3: --ocr-profile / --ocr-file
 """
 from __future__ import annotations
 
 import argparse
 import json
 import sys
+import time
 from dataclasses import asdict
 from pathlib import Path
 
@@ -57,6 +59,65 @@ def _do_show_profile(cfg: AppConfig, name: str) -> int:
     return 0
 
 
+def _countdown(seconds: float) -> None:
+    whole = int(seconds)
+    for i in range(whole, 0, -1):
+        print(f"  {i}...", flush=True)
+        time.sleep(1)
+    remaining = seconds - whole
+    if remaining > 0:
+        time.sleep(remaining)
+
+
+def _do_ocr_profile(cfg: AppConfig, name: str, delay: float, log) -> int:
+    from .capture.screenshot import grab_region, save_crop
+    from .ocr import make_engine
+
+    try:
+        profile = load_profile(cfg.paths.profiles_dir, name)
+    except FileNotFoundError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
+
+    print(f"capturing answer region in {delay:.0f}s — bring the exam window to front.")
+    _countdown(delay)
+
+    image = grab_region(profile.answer_region)
+    crop_path = save_crop(image, cfg.paths.crops_dir, name)
+    log.info("captured crop %s size=%s", crop_path, image.size)
+    print(f"crop saved: {crop_path}")
+
+    return _run_ocr(cfg, image, log)
+
+
+def _do_ocr_file(cfg: AppConfig, path: Path, log) -> int:
+    from PIL import Image
+
+    if not path.exists():
+        print(f"error: file not found: {path}", file=sys.stderr)
+        return 2
+    image = Image.open(path).convert("RGB")
+    log.info("loaded local image %s size=%s", path, image.size)
+    return _run_ocr(cfg, image, log)
+
+
+def _run_ocr(cfg: AppConfig, image, log) -> int:
+    from .ocr import make_engine
+
+    try:
+        engine = make_engine(cfg)
+        result = engine.ocr(image)
+    except Exception as e:  # network / API / config errors
+        log.exception("OCR failed")
+        print(f"OCR error: {e}", file=sys.stderr)
+        return 3
+
+    print("\n--- transcribed ---")
+    print(result.text)
+    print("--- end ---")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="gradepilot",
@@ -94,6 +155,26 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="print the JSON of a saved profile",
     )
+    parser.add_argument(
+        "--ocr-profile",
+        metavar="NAME",
+        default=None,
+        help="capture answer region from profile NAME, OCR it, print transcript",
+    )
+    parser.add_argument(
+        "--ocr-file",
+        metavar="PATH",
+        type=Path,
+        default=None,
+        help="OCR a local image file (skip screenshot capture)",
+    )
+    parser.add_argument(
+        "--delay",
+        type=float,
+        default=3.0,
+        metavar="SECONDS",
+        help="seconds to wait before --ocr-profile capture (default: 3)",
+    )
     args = parser.parse_args(argv)
 
     if args.version:
@@ -106,6 +187,8 @@ def main(argv: list[str] | None = None) -> int:
         or args.define_profile
         or args.list_profiles
         or args.show_profile
+        or args.ocr_profile
+        or args.ocr_file
     )
     if not needs_config:
         parser.print_help()
@@ -144,6 +227,12 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.show_profile:
         return _do_show_profile(cfg, args.show_profile)
+
+    if args.ocr_profile:
+        return _do_ocr_profile(cfg, args.ocr_profile, args.delay, log)
+
+    if args.ocr_file:
+        return _do_ocr_file(cfg, args.ocr_file, log)
 
     parser.print_help()
     return 0

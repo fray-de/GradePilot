@@ -5,9 +5,10 @@ Human-in-the-loop grading assistant for browser-based exam platforms
 proposes a score against a rubric using an LLM, and — after teacher
 confirmation — types the score and clicks submit.
 
-**Status:** M2 — CLI skeleton + config + logging + SQLite + interactive
-profile capture (PyQt6 overlay). OCR / LLM / automation are stubbed and
-land in later milestones (see the project brief).
+**Status:** M3 — CLI skeleton + config + logging + SQLite + interactive
+profile capture (PyQt6 overlay) + screen-region OCR via a multimodal LLM
+(OpenAI-compatible vision endpoint). LLM grading / click automation are
+stubbed and land in later milestones (see the project brief).
 
 ## Install (development)
 
@@ -46,6 +47,10 @@ python -m gradepilot --define-profile <name>   # opens fullscreen overlay
 python -m gradepilot --list-profiles
 python -m gradepilot --show-profile <name>
 
+# M3 — OCR the answer region
+python -m gradepilot --ocr-profile <name> [--delay 3]   # countdown + screenshot + VLM
+python -m gradepilot --ocr-file path/to/answer.png      # OCR a local image instead
+
 pytest -q                                 # run the test suite
 ```
 
@@ -64,6 +69,26 @@ for a different exam UI or resolution.
 
 `data/`, logs, screenshots, and the SQLite DB are gitignored. `profiles/`
 is tracked.
+
+### Choosing a vision model (M3)
+
+`config.example.yaml` lists ready-to-use `base_url` / `model` pairs for the
+main OpenAI-compatible vision providers. The default is **Qwen-VL via
+DashScope** (best Chinese handwriting OCR in our testing). Just put your
+API key in `.env` under the name `llm.api_key_env` refers to (default
+`LLM_API_KEY`).
+
+To use the OCR-specific Qwen model (cheaper, transcription-only):
+
+```yaml
+ocr:
+  vlm:
+    override_model: "qwen-vl-ocr"
+```
+
+When `ocr.vlm.override_model` is set, the OCR step uses that model while
+the (future) grading step still uses `llm.model`. Useful for splitting
+"transcribe with cheap model, grade with strong model".
 
 ## Pre-built Windows EXE
 
